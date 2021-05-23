@@ -2,7 +2,11 @@ const express = require("express");
 const socketio = require("socket.io");
 const http = require("http");
 const PORT = process.env.PORT || 5000;
-const router = require("./router")
+const router = require("./router");
+const cors = require("cors");
+
+const { addUser, removeUser, getUser, getUsersInRoom } = require('./users');
+
 // For realtime data transfer use sockets, not http requests(slow)
 
 const app = express();
@@ -14,28 +18,60 @@ const io = socketio(server, {
     }
 })
 
+
+app.use(cors());
+app.use(router);
+
 // client connection on io instance
 // clients register : join and disconnect event from socket.
 
 io.on('connect', (socket) => {
-    console.log('new user connected');
+    // console.log('new user connected');
     socket.on('join', ({ name, room }, callback) => {
-        console.log(name, room);
-
-
+        // console.log(name, room);
+        const { error, user } = addUser({ id: socket.id, name, room });
+        if (error) {
+            return callback(error)
+        }
         // Immediately trigger some response after socket.on event is emitted(user joined)
         // callback helps for error handling.
-    })
-    socket.on('disconnect', () => {
-        console.log("user left")
-    })
+        socket.join(user.room);
+
+        // Messaging events
+        // System messages when some user joins.
+        // Emit event from bakend to front end
+        socket.emit('message', { user: 'admin', text: `${user.name}, welcome to room ${user.room}.` });
+        socket.broadcast.to(user.room).emit('message', { user: 'admin', text: `${user.name} has joined!` });
+        // io.to(user.room).emit('roomData', { room: user.room, users: getUsersInRoom(user.room) });
+        callback();
+
+    });
+
+    // creating events for user generated message(from front end)
+    // Expecting event on the backend, waiting..  
+    // emit event happens on fronend and after that callback is executed.
+    socket.on('sendMessage', (message, callback) => {
+        // specific client instance
+        const user = getUser(socket.id);
+        if (user) {
+            io.to(user.room).emit('message', { user: user.name, text: message });
+        }
+
+        callback();
+    });
+
+    socket.on('disconnection', () => {
+        // console.log("user left");
+        const user = removeUser(socket.id);
+
+        if (user) {
+            io.to(user.room).emit('message', { user: 'Admin', text: `${user.name} has left.` });
+            io.to(user.room).emit('roomData', { room: user.room, users: getUsersInRoom(user.room) });
+        }
+    });
 
 });
 
-
-
-
-app.use(router);
 server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 
 
