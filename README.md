@@ -1,4 +1,5 @@
-# Real Time Messaging Application using React.Js (Frontend) and NodeJs(Express) + Socket.io(web socket library) (backend)
+# Real Time Messaging Application
+# React.Js (Frontend) and NodeJs(Express) + Socket.io(Backend)
 
 Setup:
 
