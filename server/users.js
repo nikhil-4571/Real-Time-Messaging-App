@@ -1,7 +1,7 @@
 // manage users, joining in, signing out, add users,
 // remove users, keeping track of what rooms each user in.
 
-const users = []
+let users = []
 
 // id of user or socket instance
 const addUser = ({ id, name, room }) => {
@@ -36,4 +36,4 @@ const getUsersInRoom = (room) => {
     users.filter((user) => user.room === room);
 }
 
-module.exports = { addUser, removeUser, getUser, getUsersInRoom };
+module.exports = { addUser, removeUser, getUser, getUsersInRoom, users };

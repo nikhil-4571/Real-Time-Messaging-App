@@ -5,7 +5,7 @@ const PORT = process.env.PORT || 5000;
 const router = require("./router");
 const cors = require("cors");
 
-const { addUser, removeUser, getUser, getUsersInRoom } = require('./users');
+const { addUser, removeUser, getUser, getUsersInRoom, users } = require('./users');
 
 // For realtime data transfer use sockets, not http requests(slow)
 
@@ -42,7 +42,7 @@ io.on('connect', (socket) => {
         // Emit event from bakend to front end
         socket.emit('message', { user: 'admin', text: `${user.name}, welcome to room ${user.room}.` });
         socket.broadcast.to(user.room).emit('message', { user: 'admin', text: `${user.name} has joined!` });
-        // io.to(user.room).emit('roomData', { room: user.room, users: getUsersInRoom(user.room) });
+        io.to(user.room).emit('roomData', { room: user.room, users: getUsersInRoom(user.room), totalUsers: users });
         callback();
 
     });
@@ -55,18 +55,19 @@ io.on('connect', (socket) => {
         const user = getUser(socket.id);
         if (user) {
             io.to(user.room).emit('message', { user: user.name, text: message });
+            io.to(user.room).emit('roomData', { room: user.room, users: getUsersInRoom(user.room) , totalUsers: users});
         }
 
         callback();
     });
 
-    socket.on('disconnection', () => {
+    socket.on('disconnect', () => {
         // console.log("user left");
         const user = removeUser(socket.id);
 
         if (user) {
             io.to(user.room).emit('message', { user: 'Admin', text: `${user.name} has left.` });
-            io.to(user.room).emit('roomData', { room: user.room, users: getUsersInRoom(user.room) });
+            io.to(user.room).emit('roomData', { room: user.room, users: getUsersInRoom(user.room), totalUsers: users });
         }
     });
 
