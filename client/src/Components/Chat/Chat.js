@@ -46,7 +46,7 @@ const Chat = ({ location }) => {
         return () => {
             socket.emit("disconnect");
             // Disconnect 1 instance of client socket
-            socket.off();
+            socket.disconnect();
         }
     }, [ENDPOINT, location.search]);
 
@@ -56,16 +56,17 @@ const Chat = ({ location }) => {
         socket.on('message', message => {
             // push message to messages array.
             setMessages([...messages, message]);
-            console.log(messages);
-            // setMessages(messages => [...messages, message]);
         });
 
         socket.on("roomData", ({ users, totalUsers }) => {
             setUsers(users);
             setTotalUsers(users);
             console.log(users, "users")
-            console.log(totalUsers, "totalUsers")
+            // console.log(totalUsers, "totalUsers")
         });
+        return () => {
+            socket.off()
+        }
     }, [messages]);
 
     const sendMessage = (event) => {
@@ -77,12 +78,12 @@ const Chat = ({ location }) => {
             // Input field clears on sending message.
         }
     }
-    console.log(totalUsers, users, message, messages);
+    // console.log(users);
     return (
         <div className="outerContainer">
             <div className="container">
                 <InfoBar room={room} />
-                <Messages messages={messages} name={name} totalUsers={totalUsers}/>
+                <Messages messages={messages} name={name} totalUsers={totalUsers} />
                 <Input message={message} setMessage={setMessage} sendMessage={sendMessage} />
             </div>
             <TextContainer users={users} totalUsers={totalUsers} />

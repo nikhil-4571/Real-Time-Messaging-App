@@ -2,10 +2,10 @@ const express = require("express");
 const socketio = require("socket.io");
 const http = require("http");
 const PORT = process.env.PORT || 5000;
-const router = require("./router");
+const router = require("./router.js");
 const cors = require("cors");
 
-const { addUser, removeUser, getUser, getUsersInRoom, users } = require('./users');
+const { addUser, removeUser, getUser, getUsersInRoom, users } = require('./users.js');
 
 // For realtime data transfer use sockets, not http requests(slow)
 
@@ -25,16 +25,18 @@ app.use(router);
 // client connection on io instance
 // clients register : join and disconnect event from socket.
 
-io.on('connect', (socket) => {
+io.on('connection', (socket) => {
     // console.log('new user connected');
     socket.on('join', ({ name, room }, callback) => {
         // console.log(name, room);
+        // console.log("socket id", socket.id)
         const { error, user } = addUser({ id: socket.id, name, room });
         if (error) {
             return callback(error)
         }
         // Immediately trigger some response after socket.on event is emitted(user joined)
         // callback helps for error handling.
+
         socket.join(user.room);
 
         // Messaging events
@@ -55,7 +57,7 @@ io.on('connect', (socket) => {
         const user = getUser(socket.id);
         if (user) {
             io.to(user.room).emit('message', { user: user.name, text: message });
-            io.to(user.room).emit('roomData', { room: user.room, users: getUsersInRoom(user.room) , totalUsers: users});
+            io.to(user.room).emit('roomData', { room: user.room, users: getUsersInRoom(user.room), totalUsers: users });
         }
 
         callback();
